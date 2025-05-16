@@ -1,0 +1,37 @@
+GenAI Demand Forecast Narrator – What This App Does
+
+This application helps power and utility teams understand historical electricity demand and forecast future trends — using AI-generated scenario explanations.
+
+Here’s what it does step-by-step:
+
+1. Upload Historical Data
+The user uploads a file containing past energy demand — like daily or hourly electricity usage.
+
+2. View Aggregated Trends
+The app shows summaries, trends, and patterns from the historical data. It helps spot peaks, seasonal shifts, and unusual consumption behaviour.
+
+3. Generate Prompt
+The user can generate a natural language “prompt” that describes the uploaded data. This prompt is used to communicate with the AI model in the next step.
+
+4. Generate Scenario Narrative
+Using the generated prompt, the app asks the AI to produce a plain English narrative — e.g., “Demand spiked in July due to heatwaves” or “Weekends consistently show lower usage.”
+
+5. Generate Forecast with GenAI Summary
+The app creates a demand forecast for future days using built-in logic. Then, AI is applied to each forecast row to generate a smart summary — for example:
+  “2024-07-15: Demand expected to rise due to holiday and high temperature.”
+
+The forecast with summaries is saved as a file called forecast_with_genai_summary.csv.
+
+6. Visualize Output
+The app shows charts and dashboards to help users clearly see:
+- Historical usage
+- Forecasted demand
+- Scenario-based summaries
+
+Who uses this app?
+- Power distribution teams
+- Grid planners
+- Energy analysts
+- Utilities needing narrative reports or scenario forecasts
+
+In short, it combines data analysis with AI-generated storytelling — so teams can not only predict demand, but also understand the “why” behind it.

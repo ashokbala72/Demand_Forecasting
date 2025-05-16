@@ -1,0 +1,78 @@
+# 🎬 DEMO SCRIPT: Demand Forecasting with Scenario Narratives
+
+This demo showcases a Generative AI-powered dashboard that interprets electricity demand forecasts and produces natural language insights for operator use.
+
+---
+
+## Step 1️⃣: Upload Forecast Data
+
+**Action:**
+- Click "Upload Forecast Data" in the sidebar.
+- Upload the file `large_demand_forecast.csv`.
+
+**Expected Result:**
+- A message: "✅ Forecast data loaded successfully."
+- A preview table showing 48 hours of demand, temperature, and holiday flags.
+
+---
+
+## Step 2️⃣: View Aggregated Trends
+
+**Action:**
+- Click "View Aggregated Trends" in the sidebar.
+
+**Expected Result:**
+- A table showing:
+  - `date`
+  - `peak_demand_MW`
+  - `avg_demand_MW`
+  - `avg_temp_C`
+- A line chart plotting `peak_demand_MW` and `avg_temp_C` over time.
+
+---
+
+## Step 3️⃣: Generate Prompt
+
+**Action:**
+- Click "Generate Prompt" in the sidebar.
+
+**Expected Result:**
+- A prompt will appear in a textbox:
+  ```
+  You are an energy analyst. Based on the forecast for 2025-05-01:
+  - Avg temperature: 36.2 °C
+  - Avg demand: 512.5 MW
+  - Peak demand: 579.1 MW
+  ...
+  ```
+
+---
+
+## Step 4️⃣: Generate Scenario Narrative
+
+**Action:**
+- Click "Generate Scenario Narrative" in the sidebar.
+
+**Expected Result:**
+- A natural language summary like:
+  > "Demand is expected to peak on 2025-05-01 due to high residential cooling load caused by 36°C temperatures. The trend is consistent with early summer patterns..."
+
+---
+
+## Step 5️⃣: Visualize Output
+
+**Action:**
+- Click "Visualize Output" in the sidebar.
+
+**Expected Result:**
+- A dual line chart showing temperature and demand trends.
+- Below that, the generated scenario narrative displayed in a blue info box.
+
+---
+
+## ✅ Summary
+
+This app turns raw demand forecast data into understandable insights using:
+- CSV data input
+- Aggregation and visualization
+- LLM-based text generation
