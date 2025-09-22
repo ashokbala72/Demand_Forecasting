@@ -2,27 +2,50 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from openai import OpenAI
+from openai import AzureOpenAI
 import plotly.graph_objects as go
 import os
 from dotenv import load_dotenv
 import yfinance as yf
 import requests
 
+# -----------------------------
 # Load .env file
+# -----------------------------
 load_dotenv()
 
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_API_VERSION = "2024-12-01-preview"
+AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4o-raj"
+
+# -----------------------------
+# Azure OpenAI Client
+# -----------------------------
+client = AzureOpenAI(
+    api_key=AZURE_OPENAI_API_KEY,
+    api_version=AZURE_OPENAI_API_VERSION,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+)
+
+# -----------------------------
+# Streamlit Config
+# -----------------------------
 st.set_page_config(page_title="UK Oil & Gas Forecasting", layout="wide")
 st.cache_data.clear()
 
+# -----------------------------
 # Forecast logic
+# -----------------------------
 def forecast_series(series, volatility_factor):
     future_dates = pd.date_range(datetime.today() + timedelta(days=1), periods=30)
     last_value = series.iloc[-1] if not series.empty else 0
     forecast = np.random.normal(loc=last_value, scale=volatility_factor, size=30)
     return pd.DataFrame({"date": future_dates, "forecast (£)": forecast})
 
+# -----------------------------
 # Scenario logic
+# -----------------------------
 def scenario_forecast(series, scenario):
     adjustment = {
         "Base Case": 1.0,
@@ -37,7 +60,9 @@ def scenario_forecast(series, scenario):
     simulated = np.random.normal(loc=last_price * adjustment, scale=2, size=30)
     return pd.DataFrame({"date": future_dates, "forecast": simulated})
 
+# -----------------------------
 # Load Yahoo data
+# -----------------------------
 def load_data():
     today = datetime.today()
     try:
@@ -55,11 +80,11 @@ def load_data():
             gas_raw.columns = gas_raw.columns.get_level_values(0)
         gas_raw = gas_raw.reset_index()
 
-        brent_df = brent_raw.rename(columns={"Date": "date", "Close": "Brent_Price (£/bbl)"})
+        brent_df = brent_raw.rename(columns={"Date": "date", "Close": "Brent_Price"})
         brent_df = brent_df[["date", "Brent_Price"]].dropna()
         brent_df["date"] = pd.to_datetime(brent_df["date"])
 
-        gas_df = gas_raw.rename(columns={"Date": "date", "Close": "UK_NatGas_Price (£/MMBtu)"})
+        gas_df = gas_raw.rename(columns={"Date": "date", "Close": "UK_NatGas_Price"})
         gas_df = gas_df[["date", "UK_NatGas_Price"]].dropna()
         gas_df["date"] = pd.to_datetime(gas_df["date"])
 
@@ -78,7 +103,9 @@ def load_data():
         })
         return brent_df, gas_df
 
+# -----------------------------
 # Utility to fetch actual price (dummy fallback)
+# -----------------------------
 def fetch_actual_market_price(ticker):
     try:
         df = yf.download(ticker, period="1d", interval="1d", progress=False)
@@ -86,10 +113,16 @@ def fetch_actual_market_price(ticker):
     except:
         return None
 
-page = st.sidebar.radio("\U0001F4C2 Navigation", ["\U0001F4D8 Overview", "\U0001F6E0\uFE0F Main App"])
+# -----------------------------
+# Sidebar Navigation
+# -----------------------------
+page = st.sidebar.radio("📂 Navigation", ["📘 Overview", "🛠️ Main App"])
 
-if page == "\U0001F4D8 Overview":
-    st.title("\U0001F4C2 UK Oil & Gas Price Forecasting Assistant")
+# -----------------------------
+# Overview Page
+# -----------------------------
+if page == "📘 Overview":
+    st.title("📂 UK Oil & Gas Price Forecasting Assistant")
     st.markdown("""
 ### 📂 About This App
 
@@ -126,11 +159,13 @@ This GenAI-powered assistant forecasts UK oil and natural gas prices and provide
 - Natural Gas: `NG=F`
 """)
 
-elif page == "\U0001F6E0\uFE0F Main App":
-    st.title("\U0001F6E0\uFE0F UK Oil & Gas Forecasting Dashboard")
+# -----------------------------
+# Main App
+# -----------------------------
+elif page == "🛠️ Main App":
+    st.title("🛠️ UK Oil & Gas Forecasting Dashboard")
 
     brent_df, gas_df = load_data()
-
     brent_forecast = forecast_series(brent_df["Brent_Price"], 1.5) if not brent_df.empty else pd.DataFrame()
     gas_forecast = forecast_series(gas_df["UK_NatGas_Price"], 0.3) if not gas_df.empty else pd.DataFrame()
 
@@ -140,6 +175,9 @@ elif page == "\U0001F6E0\uFE0F Main App":
         "📦 Production vs Forecast", "📊 Forecast Accuracy"
     ])
 
+    # -----------------------------
+    # Tab 1: Historical Prices
+    # -----------------------------
     with tab1:
         subtab1, subtab2 = st.tabs(["Brent Crude", "UK Natural Gas"])
         with subtab1:
@@ -153,16 +191,22 @@ elif page == "\U0001F6E0\uFE0F Main App":
                 st.dataframe(gas_df.tail(15))
                 st.line_chart(data=gas_df.set_index("date"), y="UK_NatGas_Price")
 
+    # -----------------------------
+    # Tab 2: Forecast
+    # -----------------------------
     with tab2:
-        st.subheader("\U0001F52E Forecast Prices (Next 30 Days)")
-        st.markdown("#### \U0001F4CB Brent Forecast Table")
+        st.subheader("🔮 Forecast Prices (Next 30 Days)")
+        st.markdown("#### 📋 Brent Forecast Table")
         st.dataframe(brent_forecast if not brent_forecast.empty else "Brent forecast unavailable")
 
-        st.markdown("#### \U0001F4CB UK Natural Gas Forecast Table")
+        st.markdown("#### 📋 UK Natural Gas Forecast Table")
         st.dataframe(gas_forecast if not gas_forecast.empty else "Gas forecast unavailable")
 
+    # -----------------------------
+    # Tab 3: Forecast Confidence
+    # -----------------------------
     with tab3:
-        st.subheader("\U0001F4C8 Forecast Confidence Level (vs Real Market Data)")
+        st.subheader("📈 Forecast Confidence Level (vs Real Market Data)")
         today = datetime.today().date()
         brent_today_price = fetch_actual_market_price("BZ=F")
         gas_today_price = fetch_actual_market_price("NG=F")
@@ -178,32 +222,28 @@ elif page == "\U0001F6E0\uFE0F Main App":
             else:
                 return None, None, None
 
-        st.markdown("### \U0001F50D Brent Forecast Confidence vs Market")
+        st.markdown("### 🔎 Brent Forecast Confidence vs Market")
         if not brent_forecast.empty and brent_today_price:
             f_price, a_price, conf = evaluate_today_confidence(brent_forecast, brent_today_price)
-            if f_price is not None and a_price is not None and conf is not None:
+            if f_price is not None:
                 st.info(f"📈 Forecast: £{f_price}, 🏷️ Market: £{a_price}, 🔒 Confidence: {conf:.2f}%")
-            else:
-                st.warning("⚠️ Could not compute confidence for Brent/Gas forecast.")
         else:
             st.warning("⚠️ Could not evaluate Brent confidence with live data.")
 
-        st.markdown("### \U0001F50D UK NatGas Forecast Confidence vs Market")
+        st.markdown("### 🔎 UK NatGas Forecast Confidence vs Market")
         if not gas_forecast.empty and gas_today_price:
             f_price, a_price, conf = evaluate_today_confidence(gas_forecast, gas_today_price)
-            if f_price is not None and a_price is not None and conf is not None:
+            if f_price is not None:
                 st.info(f"📈 Forecast: £{f_price}, 🏷️ Market: £{a_price}, 🔒 Confidence: {conf:.2f}%")
-            else:
-                st.warning("⚠️ Could not compute confidence for Brent/Gas forecast.")
         else:
             st.warning("⚠️ Could not evaluate Gas confidence with live data.")
 
+    # -----------------------------
+    # Tab 4: AI Advisory (Azure OpenAI)
+    # -----------------------------
     with tab4:
-        st.subheader("\U0001F9E0 GenAI Market Advisory")
+        st.subheader("🧠 GenAI Market Advisory")
         try:
-            api_key = os.getenv("OPENAI_API_KEY")
-            client = OpenAI(api_key=api_key)
-
             clean_brent = brent_forecast.dropna().head(5) if not brent_forecast.empty else pd.DataFrame()
             clean_gas = gas_forecast.dropna().head(5) if not gas_forecast.empty else pd.DataFrame()
 
@@ -224,7 +264,7 @@ UK Natural Gas (next 5 days):
 3. Comment on potential risks or volatility.
 """
                 completion = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=AZURE_OPENAI_DEPLOYMENT_NAME,
                     messages=[
                         {"role": "system", "content": "You are a UK oil and gas market analyst."},
                         {"role": "user", "content": prompt}
@@ -235,6 +275,9 @@ UK Natural Gas (next 5 days):
         except Exception as e:
             st.error(f"❌ Error generating GenAI advisory: {e}")
 
+    # -----------------------------
+    # Tab 5: Q&A with Azure OpenAI
+    # -----------------------------
     with tab5:
         st.subheader("❓ Ask About the Forecast")
         user_query = st.text_input("Your question:")
@@ -253,11 +296,11 @@ Context:
 Answer this question:
 {user_query}
 
-Note: This assistant uses market **price data only** (Brent and UK NatGas from Yahoo Finance). It does not include production volumes. All insights are based on market trends, not physical output.
+Note: This assistant uses market **price data only** (Brent and UK NatGas from Yahoo Finance).
 """
             try:
                 completion = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=AZURE_OPENAI_DEPLOYMENT_NAME,
                     messages=[
                         {"role": "system", "content": "You are a UK energy forecast assistant."},
                         {"role": "user", "content": prompt}
@@ -268,22 +311,29 @@ Note: This assistant uses market **price data only** (Brent and UK NatGas from Y
             except Exception as e:
                 st.error(f"❌ Error generating response: {e}")
 
+    # -----------------------------
+    # Tab 6: Scenario-Based Forecasting
+    # -----------------------------
     with tab6:
-        st.subheader("\U0001F4CA Scenario-Based Forecasting")
+        st.subheader("📊 Scenario-Based Forecasting")
         scenario = st.selectbox("Choose a Scenario:", ["Base Case", "Recession", "Severe Cold Weather", "Supply Shock", "Geo-Political Tensions"])
         st.markdown(f"### Scenario: {scenario}")
 
         if not brent_df.empty:
             scenario_brent = scenario_forecast(brent_df["Brent_Price"], scenario)
-            st.markdown("#### \U0001F4CD Brent Forecast (Scenario-Based)")
+            st.markdown("#### 📍 Brent Forecast (Scenario-Based)")
             st.dataframe(scenario_brent)
             st.line_chart(scenario_brent.set_index("date"))
 
         if not gas_df.empty:
             scenario_gas = scenario_forecast(gas_df["UK_NatGas_Price"], scenario)
-            st.markdown("#### \U0001F4CD UK Natural Gas Forecast (Scenario-Based)")
+            st.markdown("#### 📍 UK Natural Gas Forecast (Scenario-Based)")
             st.dataframe(scenario_gas)
             st.line_chart(scenario_gas.set_index("date"))
+
+    # -----------------------------
+    # Tab 7: Production vs Forecast
+    # -----------------------------
     with tab7:
         st.subheader("📦 Production vs Forecast")
         prod_dates = pd.date_range(datetime.today() - timedelta(days=30), periods=30)
@@ -299,14 +349,13 @@ Note: This assistant uses market **price data only** (Brent and UK NatGas from Y
         st.line_chart(df_prod.set_index("date"))
         st.dataframe(df_prod)
 
-
-
+    # -----------------------------
+    # Tab 8: Forecast Accuracy
+    # -----------------------------
     with tab8:
         st.subheader("📊 Forecast Accuracy")
-
         try:
-            # Simulate actual market price (for comparison to forecast)
-            actual_price = np.random.normal(2.5, 0.2)  # realistic UK NatGas price (£/MMBtu)
+            actual_price = np.random.normal(2.5, 0.2)  # simulated UK NatGas price
 
             if not gas_forecast.empty:
                 predicted = gas_forecast.iloc[0]["forecast (£)"]
